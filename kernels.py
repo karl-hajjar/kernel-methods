@@ -21,25 +21,9 @@ def normalize_kernel(kernel):
         kernel[x, y] / sqrt(kernel[x, x] * kernel[y, y])
 
     """
-
-    nkernel = np.copy(kernel)
-    nkernel = nkernel.astype(float)
-
-    assert nkernel.ndim == 2
-    assert nkernel.shape[0] == nkernel.shape[1]
-
-
-    for i in range(nkernel.shape[0]):
-        for j in range(i + 1, nkernel.shape[0]):
-            q = np.sqrt(nkernel[i, i] * nkernel[j, j])
-            if q > 0:
-                nkernel[i, j] /= q
-                nkernel[j, i] = nkernel[i, j]  # symmetry
-
-    # finally, set diagonal elements to 1
-    np.fill_diagonal(nkernel, 1.)
-
-    return nkernel
+    n = kernel.shape[0]
+    k_diag = kernel[range(n), range(n)].reshape(-1,1)
+    return kernel / np.sqrt(np.dot(k_diag, k_diag.T))
 
 
 class MismatchTrie(object):

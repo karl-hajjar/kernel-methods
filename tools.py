@@ -67,7 +67,7 @@ def train_test_split(X, y, K, test_size=0.1, verbose=True):
         print('Ratio of positive samples : {:.2f}'.format(n_pos/n))
         print('Ratio of negative to positive labels in the data : {:.2f}'.format(n_pos/n_neg))
 
-    ## Shuffing Positives
+    ## Shuffing positives
     shuffled_positive_indices = positive_indices.copy()
     np.random.shuffle(shuffled_positive_indices)
     max_index_train_positives = n_pos - int(np.ceil(test_size*n_pos))
@@ -210,3 +210,24 @@ def submitResults(filename, y_pred_final):
             string += str(j)+','+str(y[j][0])+'\n'
         f.write(string)
     print("----------------- Prediction written on {}.csv ---------------".format(filename))
+
+
+def accuracy_score(y_true, y_pred):
+    '''
+    Computes and returns the accuracy score of the predicted labels independently of the fact that y_true and y_pred 
+    have values in {0,1} or {-1,1}
+
+    Arguments :
+    - y_true : a 1d array of target labels (with values either in {0,1} or {-1,1})
+    - y_pred : a 1d array of predicted labels (with values either in the same set as y_true)
+
+    Returns : 
+    - a float in [0,1] representing the accuracy score of the predictions (ratio of accurate predicted labels)
+    '''
+    y_true_values = np.sort(np.unique(y_true))
+    y_pred_values = np.sort(np.unique(y_pred))
+    assert set(y_pred_values).issubset(set(y_true_values)), "y_true_values = {}, y_pred_values = {}".format(y_true_values,
+                                                                                                   y_pred_values)
+    if len(y_true_values) > 2:
+        raise ValueError("ys must have only 2 possible values")
+    return np.sum(y_pred == y_true) / len(y_true)

@@ -1,7 +1,7 @@
 import numpy as np
 import scipy
 from cvxopt import matrix, solvers
-from scipy.optimize import minimize
+#from scipy.optimize import minimize
 
 class SVM(object):
     '''
@@ -17,6 +17,7 @@ class SVM(object):
         '''
         self.lmbd = lmbd
         self.x0= x0
+        self.reformated = False
 
     def train(self, K, y):
         '''
@@ -25,10 +26,21 @@ class SVM(object):
 
         Arguments :
         - K : a 2d array representing the Kernel matrix used
-        - y : a 1d array representing the labels. y is supposed to have values in {-1,1}
+        - y : a 1d array representing the labels. y is supposed to have values in {-1,1} but if y takes values in {0,1} 
+              it is reformated to take values in {-1,1} via y <- 2 * (y - 0.5)
         '''
         dim = K.shape[0]
         assert dim == len(y)
+        y_values_sorted = np.sort(np.unique(y))
+        if len(y_values_sorted) > 2:
+            raise ValueError("y must have only 2 possible values")
+        if y_values_sorted[0] == 0 and y_values_sorted[1] == 1:
+            y = 2 * (y - 0.5)
+            self.reformated = True
+            print('\n\t\t\t######## y has been reformated to {-1,1} ########\n')
+        else:
+            if y_values_sorted[0] != -1 or y_values_sorted[1] !=1:
+                raise ValueError("y must have values either in {0,1} or {-1,1}")
         diag_y = np.diag(y)
         idt = np.identity(dim)
         P = 1 / (2*self.lmbd) * np.dot(diag_y, np.dot(K, diag_y))
@@ -41,7 +53,10 @@ class SVM(object):
         self.alpha = np.dot(diag_y, res)/(2*self.lmbd)
 
     def predict(self, K):
-        return np.sign(np.dot(K,self.alpha).reshape(-1))
+        if self.reformated:
+            return 0.5 * (np.sign(np.dot(K,self.alpha).reshape(-1)) + 1)
+        else:
+            return np.sign(np.dot(K,self.alpha).reshape(-1))
 
 
 
