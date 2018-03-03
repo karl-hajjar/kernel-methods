@@ -40,7 +40,7 @@ X = np.array(data)
 K = kern
 
 # Reformating y in order to have values in {-1,1} for SVM training
-y = 2 * (y - 0.5)
+#y = 2 * (y - 0.5)
 
 # Splitting the dataset into train and test
 X_train, X_test, y_train, y_test, K_train, K_test = K_train_test_split(X,y,K,test_size=0.2)
@@ -52,8 +52,8 @@ for lmdb in [0.001,0.01,0.05,0.1,1,10,100,1000]:
     model.train(K_train, y_train)
     y_train_pred = model.predict(K_train)
     y_test_pred = model.predict(K_test)
-    train_score = accuracy_score(y_train, y_train_pred, pred_type='pos_neg')
-    test_score = accuracy_score(y_test, y_test_pred, pred_type='pos_neg')
+    train_score = accuracy_score(y_train, y_train_pred)
+    test_score = accuracy_score(y_test, y_test_pred)
     print("\n\n------ Lambda = {} ------".format(lmdb))
     print('Train accuracy score = {:.3f}'.format(train_score))
     print('Test accuracy score = {:.3f}\n\n'.format(test_score))

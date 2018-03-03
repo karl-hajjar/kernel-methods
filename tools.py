@@ -4,21 +4,21 @@ from random import random
 from sklearn.model_selection import ShuffleSplit
 import csv
 
-def K_train_test_split(X, Y, K, test_size = 0.25):
-    rs = ShuffleSplit(n_splits=1, test_size=test_size)
-    train_index, test_index = next(rs.split(X))
-    concatenate_index = np.concatenate((train_index,test_index))
-    n_train = len(train_index)
+# def K_train_test_split(X, Y, K, test_size = 0.25):
+#     rs = ShuffleSplit(n_splits=1, test_size=test_size)
+#     train_index, test_index = next(rs.split(X))
+#     concatenate_index = np.concatenate((train_index,test_index))
+#     n_train = len(train_index)
 
 
-    new_X = np.array(X)[concatenate_index]
-    new_Y = np.array(Y)[concatenate_index]
+#     new_X = np.array(X)[concatenate_index]
+#     new_Y = np.array(Y)[concatenate_index]
 
-    new_K = np.zeros((len(concatenate_index),len(concatenate_index)))
-    for i,old_row in enumerate(concatenate_index):
-        new_K[i] = np.array(K[old_row])[concatenate_index]
+#     new_K = np.zeros((len(concatenate_index),len(concatenate_index)))
+#     for i,old_row in enumerate(concatenate_index):
+#         new_K[i] = np.array(K[old_row])[concatenate_index]
 
-    return new_X[:n_train], new_X[n_train:], new_Y[:n_train], new_Y[n_train:], new_K[:n_train, :n_train], new_K[n_train:,:n_train]
+#     return new_X[:n_train], new_X[n_train:], new_Y[:n_train], new_Y[n_train:], new_K[:n_train, :n_train], new_K[n_train:,:n_train]
 
 def train_test_split(X, y, K, test_size=0.1, verbose=True):
     '''
