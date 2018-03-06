@@ -4,21 +4,21 @@ from random import random
 from sklearn.model_selection import ShuffleSplit
 import csv
 
-# def K_train_test_split(X, Y, K, test_size = 0.25):
-#     rs = ShuffleSplit(n_splits=1, test_size=test_size)
-#     train_index, test_index = next(rs.split(X))
-#     concatenate_index = np.concatenate((train_index,test_index))
-#     n_train = len(train_index)
+def K_train_test_split(X, Y, K, test_size = 0.25):
+    rs = ShuffleSplit(n_splits=1, test_size=test_size)
+    train_index, test_index = next(rs.split(X))
+    concatenate_index = np.concatenate((train_index,test_index))
+    n_train = len(train_index)
 
 
-#     new_X = np.array(X)[concatenate_index]
-#     new_Y = np.array(Y)[concatenate_index]
+    new_X = np.array(X)[concatenate_index]
+    new_Y = np.array(Y)[concatenate_index]
 
-#     new_K = np.zeros((len(concatenate_index),len(concatenate_index)))
-#     for i,old_row in enumerate(concatenate_index):
-#         new_K[i] = np.array(K[old_row])[concatenate_index]
+    new_K = np.zeros((len(concatenate_index),len(concatenate_index)))
+    for i,old_row in enumerate(concatenate_index):
+        new_K[i] = np.array(K[old_row])[concatenate_index]
 
-#     return new_X[:n_train], new_X[n_train:], new_Y[:n_train], new_Y[n_train:], new_K[:n_train, :n_train], new_K[n_train:,:n_train]
+    return new_X[:n_train], new_X[n_train:], new_Y[:n_train], new_Y[n_train:], new_K[:n_train, :n_train], new_K[n_train:,:n_train]
 
 def train_test_split(X, y, K, test_size=0.1, verbose=True):
     '''
@@ -51,7 +51,7 @@ def train_test_split(X, y, K, test_size=0.1, verbose=True):
 
     ## Splitting indices according to labels
     target_values = np.sort(np.unique(y))
-    assert(len(target_values == 2))
+    assert len(target_values) == 2
     positives = y==target_values[1]
     negatives = y==target_values[0]
     positive_indices = indices[positives]
@@ -164,7 +164,7 @@ def get_weights_and_intercept(X, K, y, linear_kernel_model):
 def plot_predictions(X, y_true, y_pred, w=None, b=None):
     '''
     Plots the result of a classification done using a SVM with Kernel having a weight vector w and intercept b. Plots
-    the corresponding frontiere as well as the True & False Positives & Negatives.
+    the corresponding frontiere as well as the True & False Positives and Negatives.
     '''
     xmin = np.min(X[:,0])
     xmax = np.max(X[:,0])
@@ -231,3 +231,107 @@ def accuracy_score(y_true, y_pred):
     if len(y_true_values) > 2:
         raise ValueError("ys must have only 2 possible values")
     return np.sum(y_pred == y_true) / len(y_true)
+
+
+def transform(y, threshold=0.5):
+    res = np.zeros(len(y))
+    ones = y >= threshold
+    res[ones] = 1
+    res[~ones] = 0
+    return res
+
+
+def evaluate_model(clf, X, y, K, lambdas, n_validations=5, test_size=0.2, normalize=True, binary=True):
+    '''
+    Evaluates the performance of a classifier by splitting n_validations times the dataset and training and testing 
+    accordingly. Different regularisation parameters are used during training and the function prints the parameter
+    with the best score on the testing set. 
+    
+    Parameters
+    ----------
+    clf: an instance of a learning model class
+        the classifier to be evaluated
+    X: ndarray
+        2D array representing the training data
+    y: array
+        1D array representing the labels
+    K: ndarray
+        2D array reprensting the kernel computed given X
+    lambdas: list
+        contains the all values of the regularisation parameter to evaluate
+    n_validations: int, default 5
+        number of rounds of training and testing to average scores
+    test_size: float, default 0.2
+        the ratio of the test size over the train size
+    normalize: bool, default True
+        whether or not to normalize the kernel
+    binary: bool, default True
+        whether the output of the classifier clf are binary values or real values
+
+    Outputs
+    -------
+    if binary = False, None
+    otherwise returns a pandas.DataFrame containing the training and testing score of the classifier for each value of
+    lambda
+    '''
+    summary_table = pd.DataFrame(index=lambdas, 
+                                 columns=['avg Training Score', 'avg Testing Score'], 
+                                 data=np.zeros([len(lambdas),2]))
+    
+    if normalize:
+        K = normalize_kernel(K)
+        
+    if binary:
+        # For SVM models
+        for it in range(n_validations):
+            X_train, X_test, y_train, y_test, K_train, K_test = train_test_split(X,y,K,test_size=test_size,
+                                                                                 verbose=False)
+            for lmdb in lambdas:
+                model = clf(lmbd=lmdb)
+                model.train(K_train, y_train)
+                y_train_pred = model.predict(K_train)
+                y_test_pred = model.predict(K_test)
+                summary_table.ix[lmdb, 'avg Training Score'] += accuracy_score(y_train, y_train_pred)
+                summary_table.ix[lmdb, 'avg Testing Score'] += accuracy_score(y_test, y_test_pred)
+    
+        summary_table = summary_table / n_validations
+        best_lambda = summary_table['avg Testing Score'].argmax()
+        max_train_score = summary_table.ix[best_lambda, 'avg Training Score']
+        max_test_score = summary_table.ix[best_lambda, 'avg Testing Score']
+        print('Maximal Testing Accuracy Score obtained with Lambda = {}'.format(best_lambda))
+        print('\tTrain accuracy score : {:.3f}'.format(max_train_score))
+        print('\tTest accuracy score : {:.3f}'.format(max_test_score))
+        
+        return summary_table
+    
+    else:
+        # For KRR models
+        thresholds = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+        train_scores = dict({})
+        test_scores = dict({})
+        for lmbd in lambdas:
+            for threshold in thresholds:
+                train_scores[(lmbd,threshold)] = 0
+                test_scores[(lmbd,threshold)] = 0
+        for it in range(n_validations):
+            X_train, X_test, y_train, y_test, K_train, K_test = train_test_split(X,y,K,test_size=test_size,
+                                                                                 verbose=False)
+            for lmdb in lambdas:
+                model = clf(lmbd=lmdb)
+                model.train(K_train, y_train)
+                y_train_pred = model.predict(K_train)
+                y_test_pred = model.predict(K_test)
+                for threshold in thresholds:
+                    res_train = transform(y_train_pred, threshold=threshold)
+                    res_test = transform(y_test_pred, threshold=threshold)
+                    train_scores[(lmdb, threshold)] += accuracy_score(y_train, res_train)
+                    test_scores[(lmdb, threshold)] += accuracy_score(y_test, res_test)
+        
+        best_lambda, best_threshold = max(test_scores, key=test_scores.get)
+        max_train_score = train_scores[(best_lambda, best_threshold)] / n_validations
+        max_test_score = test_scores[(best_lambda, best_threshold)] / n_validations
+        print('Maximal Testing Accuracy Score obtained with Lambda = {} and threshold = {}'.format(best_lambda, 
+                                                                                                   best_threshold))
+        print('\tTrain accuracy score : {:.3f}'.format(max_train_score))
+        print('\tTest accuracy score : {:.3f}'.format(max_test_score))
+

@@ -5,7 +5,7 @@ def gaussian_kernel_matrix(X, sigma=1):
 
 def polynomial_kernel_matrix(X, deg=1):
     X_intercept = np.concatenate((X,np.ones(X.shape[0]).reshape(-1,1)), axis=1)
-    return np.sum(X_intercept*X_intercept[:,None], axis=-1)**deg
+    return np.sum(X_intercept * X_intercept[:,None], axis=-1)**deg
 
 
 import nose
