@@ -1,7 +1,6 @@
 import numpy as np
 import scipy
 from cvxopt import matrix, solvers
-#from scipy.optimize import minimize
 
 class SVM(object):
     '''
@@ -55,27 +54,37 @@ class SVM(object):
         if self.loss == 'hinge':
             # 1-SVM
             # Computing elements before pluging into the solver
+
             P = 1 / (2*self.lmbd) * np.dot(diag_y, np.dot(K, diag_y))
             q = - np.ones(dim)
             G = np.concatenate((idt, -idt))
             h = np.concatenate((np.ones(dim) / dim, np.zeros(dim)))
-            if self.x0 is None:
-                self.x0 = np.ones(dim)/(2*dim)
-            # Solving the quadratic problem
+            # P = 2 * K
+            # q = -2 * y
+            # G = np.concatenate((diag_y, -diag_y))
+            # h = np.concatenate((np.ones(dim) / (2*self.lmbd*dim), np.zeros(dim)))
+
+            #if self.x0 is None:
+                #self.x0 = np.ones(dim)/(2*dim)
+            # if self.x0 is None:
+            #     self.x0 = np.ones(dim) / (4*self.lmbd*dim)
+
+            #Solving the quadratic problem
             res = solvers.qp(matrix(P), matrix(q), matrix(G), matrix(h), initvals=self.x0)['x']
             self.alpha = np.dot(diag_y, res) / (2*self.lmbd)
+            # self.alpha = np.array(solvers.qp(matrix(P), matrix(q), matrix(G), matrix(h), initvals=self.x0)['x'])
 
         elif self.loss == 'squared_hinge':
             # 2-SVM
             # Computing elements before pluging into the solver
-            P = 0.5 * (K + self.lmbd * dim * idt)
-            q = 2 * y
+            P = 2 * (K + self.lmbd * dim * idt)
+            q = -2 * y
             G = -diag_y
             h = np.zeros(dim)
-            if self.x0 is None:
-                self.x0 = y / 2
+            # if self.x0 is None:
+            #     self.x0 = y / 2
             # Solving the quadratic problem
-            self.alpha = solvers.qp(matrix(P), matrix(q), matrix(G), matrix(h), initvals=self.x0)['x']
+            self.alpha = np.array(solvers.qp(matrix(P), matrix(q), matrix(G), matrix(h), initvals=self.x0)['x'])
 
         else:
             raise ValueError("loss argument must be one of 'hinge' or 'squared_hinge'")

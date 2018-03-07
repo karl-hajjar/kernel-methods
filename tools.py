@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from random import random
+from tqdm import tqdm
+from kernels import *
 from sklearn.model_selection import ShuffleSplit
 import csv
 
@@ -65,7 +68,7 @@ def train_test_split(X, y, K, test_size=0.1, verbose=True):
     if verbose:
         print('Total number of examples : {}'.format(n))
         print('Ratio of positive samples : {:.2f}'.format(n_pos/n))
-        print('Ratio of negative to positive labels in the data : {:.2f}'.format(n_pos/n_neg))
+        print('Ratio of negative to positive labels in the data : {:.2f}'.format(n_neg/n_pos))
 
     ## Shuffing positives
     shuffled_positive_indices = positive_indices.copy()
@@ -112,12 +115,12 @@ def plot_fake_data(data):
     plt.show()
 
 
-def generate_points(n_samples=1000, offset=3.5):
+def generate_points(n_samples=1000, offset=3.5, dim=2):
     '''
     Generates n_samples points in 2d from 2 Gaussian distributions, the second having a mean of (offset, offset)
     '''
-    zero_labels = 0.5*np.random.randn(n_samples//2, 2)
-    one_labels = 0.5*np.random.randn(n_samples//2, 2) + offset
+    zero_labels = 0.5*np.random.randn(n_samples//2, dim)
+    one_labels = 0.5*np.random.randn(n_samples//2, dim) + offset
     return zero_labels, one_labels
 
 
@@ -135,7 +138,7 @@ def generate_dataset(zero_labels, one_labels):
                 ),
                 axis=1)
     np.random.shuffle(data)
-    X = data[:,:2]
+    X = data[:,:-1]
     y = data[:,-1]
     return X,y
 
@@ -172,17 +175,18 @@ def plot_predictions(X, y_true, y_pred, w=None, b=None):
     ymin = np.min(X[:,1])
     ymax = np.max(X[:,0])
 
-    plt.figure(1, figsize=(8,6))
+    plt.figure(1, figsize=(12,10))
 
     if w is not None and b is not None:
         x1 = np.array([0,-b/w[1]])
         x2 = np.array([-b/w[0],0])
         a = (x2[1] - x1[1]) / (x2[0] - x1[0])
         c = x1[1] - a * x1[0]
+        print('x1=', x1, ' x2=', x2, ' a=', a, ' c=', c)
         ts = np.arange(xmin,xmax+0.5, 0.01)
         ys = [a*t + c for t in ts]
         plt.plot(ts, ys, color='g')
-        plt.ylim(ymin,ymax+0.5)
+        #plt.ylim(ymin,ymax+0.5)
 
     on_target = y_pred == y_true
     one_indices = y_true == 1.
@@ -267,12 +271,6 @@ def evaluate_model(clf, X, y, K, lambdas, n_validations=5, test_size=0.2, normal
         whether or not to normalize the kernel
     binary: bool, default True
         whether the output of the classifier clf are binary values or real values
-
-    Outputs
-    -------
-    if binary = False, None
-    otherwise returns a pandas.DataFrame containing the training and testing score of the classifier for each value of
-    lambda
     '''
     summary_table = pd.DataFrame(index=lambdas, 
                                  columns=['avg Training Score', 'avg Testing Score'], 
@@ -283,16 +281,17 @@ def evaluate_model(clf, X, y, K, lambdas, n_validations=5, test_size=0.2, normal
         
     if binary:
         # For SVM models
-        for it in range(n_validations):
+        for it in tqdm(range(n_validations), desc='% of validation rounds'):
             X_train, X_test, y_train, y_test, K_train, K_test = train_test_split(X,y,K,test_size=test_size,
                                                                                  verbose=False)
-            for lmdb in lambdas:
-                model = clf(lmbd=lmdb)
-                model.train(K_train, y_train)
-                y_train_pred = model.predict(K_train)
-                y_test_pred = model.predict(K_test)
-                summary_table.ix[lmdb, 'avg Training Score'] += accuracy_score(y_train, y_train_pred)
-                summary_table.ix[lmdb, 'avg Testing Score'] += accuracy_score(y_test, y_test_pred)
+            for lmbd in lambdas:
+                clf.lmbd = lmbd
+                #model = clf(lmbd=lmbd)
+                clf.train(K_train, y_train)
+                y_train_pred = clf.predict(K_train)
+                y_test_pred = clf.predict(K_test)
+                summary_table.ix[lmbd, 'avg Training Score'] += accuracy_score(y_train, y_train_pred)
+                summary_table.ix[lmbd, 'avg Testing Score'] += accuracy_score(y_test, y_test_pred)
     
         summary_table = summary_table / n_validations
         best_lambda = summary_table['avg Testing Score'].argmax()
@@ -313,19 +312,20 @@ def evaluate_model(clf, X, y, K, lambdas, n_validations=5, test_size=0.2, normal
             for threshold in thresholds:
                 train_scores[(lmbd,threshold)] = 0
                 test_scores[(lmbd,threshold)] = 0
-        for it in range(n_validations):
+        for it in tqdm(range(n_validations), desc='% of validation rounds'):
             X_train, X_test, y_train, y_test, K_train, K_test = train_test_split(X,y,K,test_size=test_size,
                                                                                  verbose=False)
-            for lmdb in lambdas:
-                model = clf(lmbd=lmdb)
-                model.train(K_train, y_train)
-                y_train_pred = model.predict(K_train)
-                y_test_pred = model.predict(K_test)
+            for lmbd in lambdas:
+                clf.lmbd = lmbd
+                #model = clf(lmbd=lmbd)
+                clf.train(K_train, y_train)
+                y_train_pred = clf.predict(K_train)
+                y_test_pred = clf.predict(K_test)
                 for threshold in thresholds:
                     res_train = transform(y_train_pred, threshold=threshold)
                     res_test = transform(y_test_pred, threshold=threshold)
-                    train_scores[(lmdb, threshold)] += accuracy_score(y_train, res_train)
-                    test_scores[(lmdb, threshold)] += accuracy_score(y_test, res_test)
+                    train_scores[(lmbd, threshold)] += accuracy_score(y_train, res_train)
+                    test_scores[(lmbd, threshold)] += accuracy_score(y_test, res_test)
         
         best_lambda, best_threshold = max(test_scores, key=test_scores.get)
         max_train_score = train_scores[(best_lambda, best_threshold)] / n_validations
@@ -334,4 +334,56 @@ def evaluate_model(clf, X, y, K, lambdas, n_validations=5, test_size=0.2, normal
                                                                                                    best_threshold))
         print('\tTrain accuracy score : {:.3f}'.format(max_train_score))
         print('\tTest accuracy score : {:.3f}'.format(max_test_score))
+
+
+def load_and_transform(data_path):
+    '''
+    Loads the data located at data_path and transforms it from lines of strings containing A,T,C,G to an array of 
+    integer values in {0,1,2,3}.
+    
+    Parameters
+    ----------
+    data_path: string
+        the path to the data to be loaded
+    '''
+    data = pd.read_csv(data_path, header=None)[0].values.tolist()
+    transformed = []
+    for i in range(len(data)):
+        s = data[i].replace("A", "0")
+        s = s.replace("T", "1")
+        s = s.replace("C", "2")
+        s = s.replace("G", "3")
+        transformed.append(list(map(int, s)))
+    return np.array(transformed)
+
+
+def submission_kernel_pipeline(train_data_path, submission_data_path, compute_kernel, normalize=False):
+    '''
+    Computes and returns the kernels K_train and K_sub for training on the whole training set and predicting on the 
+    submission data, after having loaded and transformed the training and submission data located respectively at 
+    train_data_path and submission_data_path. Normalizes the kernel if required.
+    
+    Parameters
+    ----------
+    train_data_path: string
+        path to the training data
+    submission_data_path: string
+        path to the submission data
+    compute_kernel: function
+        a function of the file kernels.py which computes a kernel when given data
+    normalize: Boolean, deflaut False
+        whether or not to normalize the (whole) kernel before splitting and returning the two train and submission 
+        kernels
+    '''
+    X_train = load_and_transform(train_data_path)
+    train_size = len(X_train)
+    X_sub = load_and_transform(submission_data_path)
+    X = np.concatenate((X_train, X_sub))
+    print('------ Data loaded, transformed and concatenated ------')
+    print('------ Computing Kernel ------')
+    K = compute_kernel(X)
+    if normalize:
+        K = normalize_kernel(K)
+    return K[:train_size, :train_size], K[train_size:,:train_size]
+
 
