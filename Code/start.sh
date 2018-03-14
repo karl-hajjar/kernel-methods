@@ -1,1 +1,1 @@
-python3 main_mismatch.py
+python3 main.py

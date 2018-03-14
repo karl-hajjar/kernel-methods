@@ -15,10 +15,6 @@ for file in [0,1,2]:
     Y_train = pd.read_csv("./data/Ytr{}.csv".format(file), index_col=0)['Bound'].values
     X_test = pd.read_csv("data/Xte{}.csv".format(file), sep=' ',header=None)[0].values.tolist()
 
-    X_train = X_train[:10]
-    Y_train = Y_train[:10]
-    X_test = X_test[:10]
-
     big_X = np.concatenate((X_train, X_test),axis=0)
 
     print("----- File {} read ------".format(file))
