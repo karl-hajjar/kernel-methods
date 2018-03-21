@@ -8,7 +8,8 @@ from tools import *
 
 y_pred_final = []
 length = [11,11,8]
-l = [0.1668, 0.0220, 1.3226]
+#l = [0.1668, 0.0220, 1.3226]
+l = [0.0372759, 0.027724, 0.3162277]
 
 for file in [0,1,2]:
     X_train = pd.read_csv("data/Xtr{}.csv".format(file), sep=' ',header=None)[0].values.tolist()
@@ -36,4 +37,4 @@ for file in [0,1,2]:
     print("----- File {} predicted ------".format(file))
 
 
-submitResults("Submission", y_pred_final)
+submitResults("Yte", y_pred_final)

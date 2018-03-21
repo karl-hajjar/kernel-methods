@@ -60,8 +60,57 @@ def one_mismatch_away(s, codon = False):
 
 def two_mismatch_away(s):
     res = []
-    for a in one_mismatch_away(s):
+    l = one_mismatch_away(s)
+    for a in l:
         for t in one_mismatch_away(a):
-            if t not in res and t != s and t not in one_mismatch_away(s):
+            if t not in res and t != s and t not in l:
                 res.append(t)
     return res
+
+
+def new_embedding_mismatch_kernel(X, lengths, mismatch, verbose = False):
+
+    all_sequences_index = {}
+    id_last_seq = 0
+    for idx in range(len(X)):
+        data = X[idx]
+        for i in range(len(data)-lengths + 1):
+            seq = data[i:i+lengths]
+            if seq not in all_sequences_index:
+                all_sequences_index[seq] = id_last_seq
+                id_last_seq += 1
+
+            if mismatch >= 1:
+                for seq_mis in one_mismatch_away(seq):
+                    if seq_mis not in all_sequences_index:
+                        all_sequences_index[seq_mis] = id_last_seq
+                        id_last_seq += 1
+
+            if mismatch >= 2:
+                for seq_mis in two_mismatch_away(seq):
+                    if seq_mis not in all_sequences_index:
+                        all_sequences_index[seq_mis] = id_last_seq
+                        id_last_seq += 1
+
+
+    vectors = np.zeros((len(X),len(all_sequences_index)))
+
+    for idx in tqdm(range(len(X))):
+        data = X[idx]
+        for i in range(len(data)-lengths + 1):
+            seq = data[i:i+lengths]
+            vectors[idx, all_sequences_index[seq]] += 1
+            if mismatch >= 1:
+                for seq_mis in one_mismatch_away(seq):
+                    vectors[idx, all_sequences_index[seq_mis]] += 1/2
+            if mismatch >= 2:
+                for seq_mis in two_mismatch_away(seq):
+                    vectors[idx, all_sequences_index[seq_mis]] += 1/4
+
+    if verbose:
+        print(all_sequences_index)
+        print('Embedding :')
+        print(vectors)
+
+    embeddings = sparse.csr_matrix(vectors)
+    return np.dot(embeddings, embeddings.T).todense()

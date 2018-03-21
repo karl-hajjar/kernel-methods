@@ -45,7 +45,7 @@ def accuracy_score(y_true, y_pred):
 
 
 
-def train_test_split(X, y, K, test_size=0.1, verbose=True):
+def train_test_split(X, y, K, test_size=0.1, verbose=False):
     '''
     Splits a dataset (X,y) into a training and a testing set while preserving the same ratio of positive labels in the
     training and testing sets as in the initial dataset. The function also returns two kernel matrices for training and
@@ -53,7 +53,7 @@ def train_test_split(X, y, K, test_size=0.1, verbose=True):
     training and testing, i.e. K_train[i,j] = K[X_train[i], X_train[j]] and K_test[i,j] = K[X_test[i], X_train[j]]
 
     Arguments :
-    - X : a 2d array of features containing as many rows as there are samples in the dataset
+    - X : a 1d array of features containing as many rows as there are samples in the dataset
     - y : a 1d array containing the labels of the dataset
     - test_size : a float representing the ratio of the initial data that the testing set should contain (default 0.1)
     - verbose : a Boolean stating whether or not the function should print information about the the initial dataset
@@ -61,8 +61,8 @@ def train_test_split(X, y, K, test_size=0.1, verbose=True):
 
     Outputs :
     A tuple of length 6 containing:
-    - X_train : a 2d array containing the training data
-    - X_test : a 2d array containing the testing data
+    - X_train : a 1d array containing the training data
+    - X_test : a 1d array containing the testing data
     - y_train : a 1d array containing the training labels
     - y_test : a 1d array containing the testing labels
     - K_train : a 2d array containing the training kernel matrix
@@ -113,9 +113,9 @@ def train_test_split(X, y, K, test_size=0.1, verbose=True):
     np.random.shuffle(test_indices)
 
     ## Producing train and test arrays from previously computed indices
-    X_train = X[train_indices,:]
+    X_train = X[train_indices]
     y_train = y[train_indices]
-    X_test = X[test_indices,:]
+    X_test = X[test_indices]
     y_test = y[test_indices]
 
     K_train = K[train_indices,:][:,train_indices]
