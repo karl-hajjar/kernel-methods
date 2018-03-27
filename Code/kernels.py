@@ -76,7 +76,7 @@ def two_mismatch_away(s):
     Parameters
     ----------
     s : string
-        sequence of letters of which we wish to compute all the possible modifications of one letter only
+        sequence of letters of which we wish to compute all the possible modifications of two letters only
 
     Returns
     -------
@@ -108,9 +108,9 @@ def embedding_mismatch_kernel(X, length, mismatch):
     -------
     a 2d symmetric array of shape (X.shape[0], X.shape[0])
     '''
-    ## Computing all the subsequences of length 'length' present in the data along with all their possible one letter or 
-    ## two letter variations (acording to the argument mismatch) and storing them in a dictionnary where, for every 
-    ## subsequence, the value of the corresponding key is an id for the sequence (the first subsequence to be 
+    ## Computing all the subsequences of length 'length' present in the data along with all their possible one letter or
+    ## two letter variations (acording to the argument mismatch) and storing them in a dictionnary where, for every
+    ## subsequence, the value of the corresponding key is an id for the sequence (the first subsequence to be
     ## encountered in the dataset will have index 0, the second 1, etc)
     all_sequences_index = {}
     id_last_seq = 0
@@ -144,7 +144,7 @@ def embedding_mismatch_kernel(X, length, mismatch):
             if mismatch > 2:
                 raise ValueError("In our implementation of the Mismatch Kernel, the number of mismatches must be 0, 1 or 2")
 
-    ## A lil-matrix (sparse format whose values can be updated easily) containg for each row of data the number of times 
+    ## A lil-matrix (sparse format whose values can be updated easily) containg for each row of data the number of times
     ## each subsequence possible is encountered, up to a certain penalty (1/2 for one-mismatches, 1/4 for two-mismatches)
     vectors = sparse.lil_matrix((len(X),len(all_sequences_index)), dtype=float)
 
