@@ -14,7 +14,7 @@ def submitResults(filename, y_pred_final):
     submission on the Kaggle platform.
     '''
     y = np.concatenate([y_pred_final[i] for i in [0,1,2]])
-    with open("data/submission/{}.csv".format(filename), 'w') as f:
+    with open("data/{}.csv".format(filename), 'w') as f:
         string = "Id,Bound\n"
         for j in range(len(y)):
             string += str(j)+','+str(int(y[j]))+'\n'
@@ -45,15 +45,16 @@ def accuracy_score(y_true, y_pred):
 
 
 
-def train_test_split(X, y, K, test_size=0.1, verbose=False):
+def train_test_split(K, y, test_size=0.1, verbose=False):
     '''
-    Splits a dataset (X,y) into a training and a testing set while preserving the same ratio of positive labels in the
-    training and testing sets as in the initial dataset. The function also returns two kernel matrices for training and
-    testing which entries are computed according to the shuffling operated on the initial dataset before splitting into
-    training and testing, i.e. K_train[i,j] = K[X_train[i], X_train[j]] and K_test[i,j] = K[X_test[i], X_train[j]]
+    Splits a dataset a kernel matrix K and a vector label y into a training and a testing set while preserving the same 
+    ratio of positive labels in the training and testing sets as in the initial dataset. The function also returns two 
+    kernel matrices for training and testing which entries are computed according to the shuffling operated on the 
+    initial dataset before splitting into training and testing, i.e. K_train[i,j] = K[X_train[i], X_train[j]] and 
+    K_test[i,j] = K[X_test[i], X_train[j]]
 
     Arguments :
-    - X : a 1d array of features containing as many rows as there are samples in the dataset
+    - K : a 2d array of kernel values containing as many rows and columns as there are samples in the dataset
     - y : a 1d array containing the labels of the dataset
     - test_size : a float representing the ratio of the initial data that the testing set should contain (default 0.1)
     - verbose : a Boolean stating whether or not the function should print information about the the initial dataset
@@ -61,17 +62,16 @@ def train_test_split(X, y, K, test_size=0.1, verbose=False):
 
     Outputs :
     A tuple of length 6 containing:
-    - X_train : a 1d array containing the training data
-    - X_test : a 1d array containing the testing data
-    - y_train : a 1d array containing the training labels
-    - y_test : a 1d array containing the testing labels
     - K_train : a 2d array containing the training kernel matrix
     - K_test : a 2d array containing the kernel matrix for predicting
+    - y_train : a 1d array containing the training labels
+    - y_test : a 1d array containing the testing labels
     '''
 
     ## Getting number of examples and range of indices
     n = len(y)
-    assert n == X.shape[0] == K.shape[0]
+    #assert n == X.shape[0] == K.shape[0]
+    assert n == K.shape[0]
     indices = np.arange(n)
 
     ## Splitting indices according to labels
@@ -113,15 +113,15 @@ def train_test_split(X, y, K, test_size=0.1, verbose=False):
     np.random.shuffle(test_indices)
 
     ## Producing train and test arrays from previously computed indices
-    X_train = X[train_indices]
+    #X_train = X[train_indices]
     y_train = y[train_indices]
-    X_test = X[test_indices]
+    #X_test = X[test_indices]
     y_test = y[test_indices]
 
     K_train = K[train_indices,:][:,train_indices]
     K_test = K[test_indices,:][:,train_indices]
 
-    return X_train, X_test, y_train, y_test, K_train, K_test
+    return K_train, K_test, y_train, y_test
 
 
 def generate_noisy_sine_data(start=0., end=3., step=0.01, norm=5):
@@ -225,29 +225,12 @@ def plot_predictions(X, y_true, y_pred, w=None, b=None):
 
 
 def transform(y, threshold=0.5):
+    '''
+    Transforms probability estimates into class labels given a certain threshold (used for classifying with KRR for 
+    instance). 
+    '''
     res = np.zeros(len(y))
     ones = y >= threshold
     res[ones] = 1
     res[~ones] = 0
     return res
-
-
-def load_and_transform(data_path):
-    '''
-    Loads the data located at data_path and transforms it from lines of strings containing A,T,C,G to an array of
-    integer values in {0,1,2,3}.
-
-    Parameters
-    ----------
-    data_path: string
-        the path to the data to be loaded
-    '''
-    data = pd.read_csv(data_path, header=None)[0].values.tolist()
-    transformed = []
-    for i in range(len(data)):
-        s = data[i].replace("A", "0")
-        s = s.replace("T", "1")
-        s = s.replace("C", "2")
-        s = s.replace("G", "3")
-        transformed.append(list(map(int, s)))
-    return np.array(transformed)

@@ -52,8 +52,8 @@ class SVM(object):
         solvers.options['show_progress'] = self.show_progress
 
         if self.loss == 'hinge':
-            # 1-SVM
-            # Computing elements before pluging into the solver
+            ## 1-SVM
+            ## Computing elements before pluging into the solver
 
             P = 1 / (2*self.lmbd) * np.dot(diag_y, np.dot(K, diag_y))
             q = - np.ones(dim)
@@ -69,14 +69,14 @@ class SVM(object):
             # if self.x0 is None:
             #     self.x0 = np.ones(dim) / (4*self.lmbd*dim)
 
-            #Solving the quadratic problem
+            ## Solving the quadratic problem
             res = solvers.qp(matrix(P), matrix(q), matrix(G), matrix(h), initvals=self.x0)['x']
             self.alpha = np.dot(diag_y, res) / (2*self.lmbd)
             # self.alpha = np.array(solvers.qp(matrix(P), matrix(q), matrix(G), matrix(h), initvals=self.x0)['x'])
 
         elif self.loss == 'squared_hinge':
-            # 2-SVM
-            # Computing elements before pluging into the solver
+            ## 2-SVM
+            ## Computing elements before pluging into the solver
             P = 2 * (K + self.lmbd * dim * idt)
             q = -2 * y
             G = -diag_y
@@ -89,7 +89,7 @@ class SVM(object):
         else:
             raise ValueError("loss argument must be one of 'hinge' or 'squared_hinge'")
 
-        # Solving the quadratic problem
+        ## Solving the quadratic problem
         #solvers.options['show_progress'] = self.show_progress
         #res = solvers.qp(matrix(P), matrix(q), matrix(G), matrix(h), initvals=self.x0)['x']
         #self.alpha = np.dot(diag_y, res) / (2*self.lmbd)
